@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+{% block stylesheets %}
+
+<!-- Google Font: Source Sans Pro -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="/static/assets/plugins/fontawesome-free/css/all.min.css">
+<!-- DataTables -->
+<link rel="stylesheet" href="/static/assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+<!-- Ionicons -->
+<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+<!-- SweetAlert2 -->
+<link rel="stylesheet" href="/static/assets/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css">
+<!-- Toastr -->
+<link rel="stylesheet" href="/static/assets/plugins/toastr/toastr.min.css">
+<!-- Theme style -->
+<link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
+
+{% endblock stylesheets %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<div class="col-12">
+    <h1><b>Конвертер</b></h1>
+</div>
+<div class="modal fade" id="setModal2" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Загрузка файлов</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>выберите файлы для загрузки данных</p>
+                <form method="POST" action="{% url 'web_part:upload_excel'%}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <ul class="list-unstyled">
+                        <li>
+                            <input type="file" class="fas fa-folder" name="myfile">
+                        </li>
+                        <li>
+                            <br>
+                        </li>
+                        <li>
+                            <button type="submit" class="btn btn-block btn-primary"> Загрузить</button>
+                        </li>
+                    </ul>
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="card col-12">
+        <div class="card-header">
+            <h3 class="card-title"><b>Загрузка файла</b></h3>
+        </div>
+        <div class="card-body">
+           <a class="btn btn-app" data-toggle="modal" data-target="#setModal2">
+               <i class="fas fa-upload" ></i> Выберите Excel файл
+           </a>
+
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="card col-12">
+        <div class="card-header">
+            <h3 class="card-title"><b>Выгрузка xml</b></h3>
+        </div>
+        <form method="POST" action="{% url 'web_part:create_xml'%}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <ul class="list-unstyled">
+                <h5>Выберите значение dopl: </h5>
+                <div class="input-group mb-2">
+                    <select class="custom-select" id="dopl" name="dopl" required>
+                        <option selected value="1">Да</option>
+                        <option selected value="0">Нет</option>
+                    </select>
+                </div>
+                <h5>Выберите значение dop_otpusk: </h5>
+                <div class="input-group mb-3">
+                    <select class="custom-select" id="dop_otpusk" name="dop_otpusk" required>
+                        <option selected value="1">Да</option>
+                        <option selected value="0">Нет</option>
+                    </select>
+                </div>
+                <h5>Выберите значение week: </h5>
+                <div class="input-group mb-3">
+                    <select class="custom-select" id="week" name="week" required>
+                        <option selected value="1">Да</option>
+                        <option selected value="0">Нет</option>
+                    </select>
+                </div>
+                <h5>Выберите значение medosm: </h5>
+                <div class="input-group mb-3">
+                    <select class="custom-select" id="medosm" name="medosm" required>
+                        <option selected value="1">Да</option>
+                        <option selected value="0">Нет</option>
+                    </select>
+                </div>
+                <h5>Выберите значение lpo: </h5>
+                <div class="input-group mb-3">
+                    <select class="custom-select" id="lpo" name="lpo" required>
+                        <option selected value="1">Да</option>
+                        <option selected value="0">Нет</option>
+                    </select>
+                </div>
+                <h5>Выберите значение milk: </h5>
+                <div class="input-group mb-3">
+                    <select class="custom-select" id="milk" name="milk" required>
+                        <option selected value="1">Да</option>
+                        <option selected value="0">Нет</option>
+                    </select>
+                </div>
+            <li>
+                <button type="submit" class="btn btn-block btn-primary"> Загрузить</button>
+            </li>
+            </ul>
+        </form>
+    </div>
+</div>
+
+
+<table class="table m-0">
+    <thead>
+        <tr>
+            <th>Имя файла</th>
+            <th>Дата создания</th>
+            <th>Тип</th>
+            <th>Статус </th>
+            <th>Скачать</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in files %}
+            {% if a.type == 1 or a.type == 2 %}
+                <tr>
+                    <td>{{ a.name }}</td>
+                    <td>{{ a.createdAt }}</td>
+                    <td>
+                        {% if a.type == 1 %}
+                            Excel
+                        {% else %}
+                            Xml
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if a.status == 'SUCCESS' %}
+                        <span class="badge badge-success">Готово</span>
+                        {% else %}
+                            {% if a.status == 'PENDING' %}
+                                <span class="badge badge-warning"> Обрабатывается</span>
+                            {% else %}
+                                <span class="badge badge-danger">Ошибка</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if a.fileField %}
+                            <a href=" {{a.fileField.url}}" download> Скачать</a>
+                        {% else %}
+                            <a></a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>
+
+{% block javascripts %}
+<script src="/static/assets/plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- DataTables -->
+<script src="/static/assets/plugins/datatables/jquery.dataTables.min.js"></script>
+<script src="/static/assets/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+<script src="/static/assets/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+<script src="/static/assets/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="static/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
+<!-- Toastr -->
+<script src="static/assets/plugins/toastr/toastr.min.js"></script>
+<!-- AdminLTE App -->
+<!--<script src="/static/assets/js/adminlte.min.js"></script>-->
+<!-- AdminLTE for demo purposes -->
+<script src="/static/assets/js/demo.js"></script>
+
+
+<script type="text/javascript">
+    var Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        autohide: false,
+      });
+    var text = '{{ message }}'
+    var textLength = text.length
+    if (textLength != 4){
+        $(window).on('load',function(){
+            $(document).Toasts('create', {
+                class: 'bg-info',
+                title: 'Сообщение',
+                body: text,
+            });
+        });
+    };
+</script>
+{% endblock javascripts %}

@@ -1,0 +1,9 @@
+*.xlsx
+*test*
+00*_*.py
+*.xml
+*.zip
+*.log
+.env*
+.idea/
+*sql*

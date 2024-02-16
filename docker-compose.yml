@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  converter-app:
+    platform: linux/amd64
+    container_name: converter-app
+    restart: always
+    build: .
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - 8001:8001
+    env_file:
+      - ./.env
+  celery:
+    platform: linux/amd64
+    build: .
+    command: celery -A converter worker --concurrency=1 --loglevel=error --logfile=mediafiles/logs/celery.log
+    restart: always
+    volumes:
+      - .:/usr/src/app
+    env_file:
+      - ./.env
+    depends_on:
+      - converter-app
+      - redis
+
+  redis:
+    image: redis:7-alpine
+
+  dashboard:
+    platform: linux/amd64
+    build: .
+    restart: always
+    command: celery -A converter --broker=redis://redis:6379/0 flower --port=5556
+    ports:
+      - 5556:5556
+    env_file:
+      - ./.env
+    depends_on:
+      - converter-app
+      - redis
+      - celery

@@ -1,0 +1,15 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect y="0.00244141" width="35.9977" height="35.9977" rx="5" fill="white"/>
+<circle cx="18" cy="18" r="11" fill="url(#paint0_angular_53838_37159)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M19.3996 14.2874L15.5208 17.9997L13.7199 16.2123L15.5881 14.2874H12.0575L10.118 16.2123L15.5208 21.7119L20.3694 16.7622H23.5555L25.876 14.2986L19.3996 14.2874ZM26.0484 17.4497H20.6458L16.3513 21.712H19.8145L21.7539 19.787H23.5549L26.0484 17.4497Z" fill="white"/>
+<defs>
+<radialGradient id="paint0_angular_53838_37159" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(18 18) rotate(69.2277) scale(11.0057)">
+<stop offset="0.0416667" stop-color="#E32533"/>
+<stop offset="0.203125" stop-color="#EF7F35"/>
+<stop offset="0.385417" stop-color="#FCDAAA"/>
+<stop offset="0.557292" stop-color="#6EC1B0"/>
+<stop offset="0.6875" stop-color="#4873B8"/>
+<stop offset="0.739583" stop-color="#E01833"/>
+</radialGradient>
+</defs>
+</svg>
