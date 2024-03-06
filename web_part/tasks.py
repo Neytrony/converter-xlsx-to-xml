@@ -248,10 +248,16 @@ def fill_models_dict(filename, a_filter):
         sout_indent_kut_ = sout_dop_info_fact_['Класс/подкласс условий труда (по результатам предыдущей АРМ/СОУТ) Если не проводилась, то написать НЕТ'].values[0]
         if sout_indent_kut_ is None:
             sout_indent_kut_ = 'Нет'
+        is_ident_dict = {
+            '0': '0',
+            '1': '1',
+            '2': '2',
+            '3': '3',
+        }
         models_dict['sout_ident'].append({
             'id': indent_count,
             'rm_id': rm_count,
-            'is_ident': '-1',
+            'is_ident': is_ident_dict.get(rm['Краткое описание выполняемых работ'][ind_rm], -1),
             'is_travma': '0',
             'is_profzab': '0',
             'kut': sout_indent_kut_,
