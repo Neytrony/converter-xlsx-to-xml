@@ -167,35 +167,47 @@ def fill_models_dict(filename, a_filter):
             if a_filter['analog_rm'] in [1]:
                 analog_rm = models_dict['analog_rm'].get(unique_analog_str)
                 if analog_rm is None:
-                    models_dict['analog_rm'][unique_analog_str] = []
-                    group_id = analog_rm_group
-                    main = rm_count
-                    analog_rm_group += 1
+                    models_dict['analog_rm'][unique_analog_str] = {'analog_rms': [], 'count': 1, 'main': rm_count}
                 else:
-                    group_id = analog_rm['group_id']
+                    a_count = analog_rm['count']
                     main = analog_rm['main']
-                models_dict['analog_rm'][unique_analog_str].append({
-                    'id': analog_rm_count,
-                    'group_id': group_id,
-                    'rm_id': rm_count,
-                    'main': main
-                })
-                analog_rm_count += 1
+                    if a_count == 1:
+                        analog_rm['analog_rms'].append({
+                            'id': analog_rm_count,
+                            'group_id': analog_rm_group,
+                            'rm_id': main,
+                            'main': main
+                        })
+                        analog_rm_count += 1
+                        analog_rm['group_id'] = analog_rm_group
+
+                    group_id = analog_rm.get('group_id')
+                    analog_rm['analog_rms'].append({
+                        'id': analog_rm_count,
+                        'group_id': group_id,
+                        'rm_id': rm_count,
+                        'main': main
+                    })
+
+                    analog_rm['count'] = a_count + 1
+                    analog_rm_count += 1
             elif a_filter['analog_rm'] in [2]:
                 group_id = rm['Аналогия'][ind_rm]
-                analog_rm = models_dict['analog_rm'].get(group_id)
-                if analog_rm is None:
-                    models_dict['analog_rm'][group_id] = []
-                    main = rm_count
-                else:
-                    main = analog_rm['main']
-                models_dict['analog_rm'][unique_analog_str].append({
-                    'id': analog_rm_count,
-                    'group_id': group_id,
-                    'rm_id': rm_count,
-                    'main': main
-                })
-                analog_rm_count += 1
+                if group_id != '':
+                    analog_rm = models_dict['analog_rm'].get(group_id)
+                    if analog_rm is None:
+                        models_dict['analog_rm'][group_id] = []
+                        main = rm_count
+                    else:
+                        analog_rm = analog_rm[0]
+                        main = analog_rm['main']
+                    models_dict['analog_rm'][unique_analog_str].append({
+                        'id': analog_rm_count,
+                        'group_id': group_id,
+                        'rm_id': rm_count,
+                        'main': main
+                    })
+                    analog_rm_count += 1
 
         sout_dop_info_fact_ = sout_dop_info_fact.copy()
         sout_dop_info_fact_ = sout_dop_info_fact_[sout_dop_info_fact_['Номер рабочего места'] == rm_num]
@@ -455,6 +467,15 @@ def write_xml(models_dict, filename):
                 if value_ is not None:
                     subxml = Et.SubElement(struct_uch_, key_)
                     subxml.text = f'{value_}'
+
+    for analog_rm_value in models_dict['analog_rm'].values():
+        if analog_rm_value['count'] > 1:
+            for analog_rm in analog_rm_value['analog_rms']:
+                    analog_rm_ = Et.SubElement(xml, 'anal_group')
+                    for key_, value_ in analog_rm.items():
+                        if value_ is not None:
+                            subxml = Et.SubElement(analog_rm_, key_)
+                            subxml.text = f'{value_}'
 
 
     tree = Et.ElementTree(xml)
