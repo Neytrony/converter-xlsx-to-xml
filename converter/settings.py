@@ -142,3 +142,8 @@ MEDIA_URL = '/media/'
 CELERY_BROKER_URL = "redis://redis:6379"
 CELERY_RESULT_BACKEND = "redis://redis:6379"
 CELERY_IMPORTS = ['web_part.tasks']
+
+##############################################################
+# Настройки сессии
+##############################################################
+SESSION_COOKIE_AGE = 3600

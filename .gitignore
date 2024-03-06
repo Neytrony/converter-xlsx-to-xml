@@ -4,6 +4,6 @@
 *.xml
 *.zip
 *.log
-.env*
+.env
 .idea/
 *sql*

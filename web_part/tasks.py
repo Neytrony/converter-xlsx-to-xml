@@ -1,23 +1,24 @@
 from converter.celery import app
 import pandas as pd
+import numpy as np
+import os
 import zipfile
 import datetime
 import time
 import uuid
-import numpy as np
 import xml.etree.ElementTree as Et
 from web_part.models import Files
 
 
 @app.task
 def read_excel(filename):
-    full_path = f'mediafiles/excel/{filename}'
+    full_path = f'mediafiles/{filename}'
     status = check_excel(full_path)
 
 
 @app.task
 def create_xml_task(filename, a_filter):
-    filename_excel = f'mediafiles/excel/{filename}'
+    filename_excel = f'mediafiles/{filename}'
     write_xml(fill_models_dict(filename_excel, a_filter), filename_excel)
 
 
@@ -72,6 +73,7 @@ def fill_models_dict(filename, a_filter):
         'sout_ident': [],
         'struct_uch': {},
         'sout_dop_info_fact': [],
+        'analog_rm': {}
     }
 
     ceh_count = 1
@@ -83,6 +85,8 @@ def fill_models_dict(filename, a_filter):
     org_id = 1
     sout_dop_info_fact_count = 1
     ind_req = 0
+    analog_rm_count = 1
+    analog_rm_group = 1
 
     org_name = req['Полное наименование организации'][ind_req]
 
@@ -113,9 +117,20 @@ def fill_models_dict(filename, a_filter):
             short_code = rm['Фактический адрес местонахождения'][ind_rm]
         else:
             short_code = None
+        caption = rm['Наименование штатной единицы (должность)'][ind_rm]
+        operation = rm['Выполняемая операция и время ее выполнения в % от смены'][ind_rm]
+        short_discription = rm['Краткое описание выполняемых работ'][ind_rm]
+        oborud = rm['Используемое оборудование в работе'][ind_rm]
+        material = rm['Используемые материалы и сырье'][ind_rm]
+        timesmena = '480'
+        ceh_name = rm['Название подразделения'][ind_rm]
+        code_ok = rm['Код ОК'][ind_rm]
+        ETKC = rm['ЕТКС'][ind_rm]
+        uch_caption = rm['Отдел'][ind_rm]
+        unique_analog_str = f'{short_code}{caption}{timesmena}{operation}{short_discription}{oborud}{material}{ceh_name}{uch_caption}{code_ok}{ETKC}'
         a_rm = {
             'id': rm_count,
-            'caption': rm['Наименование штатной единицы (должность)'][ind_rm],
+            'caption': caption,
             #'caption2': None,
             'short_code': short_code,
             'uch_id': 0,
@@ -136,7 +151,7 @@ def fill_models_dict(filename, a_filter):
             'ind_code': rm_num,
             #'deleted': 0,
             'm_order': rm_count,
-            'timesmena': '480',
+            'timesmena': timesmena,
             #'param': None,
             'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
             #'etks_memo': None,
@@ -147,6 +162,40 @@ def fill_models_dict(filename, a_filter):
             #'kut2': None,
             #'file_sout': None,
         }
+
+        if a_filter['analog_rm'] not in [3]:
+            if a_filter['analog_rm'] in [1]:
+                analog_rm = models_dict['analog_rm'].get(unique_analog_str)
+                if analog_rm is None:
+                    models_dict['analog_rm'][unique_analog_str] = []
+                    group_id = analog_rm_group
+                    main = rm_count
+                    analog_rm_group += 1
+                else:
+                    group_id = analog_rm['group_id']
+                    main = analog_rm['main']
+                models_dict['analog_rm'][unique_analog_str].append({
+                    'id': analog_rm_count,
+                    'group_id': group_id,
+                    'rm_id': rm_count,
+                    'main': main
+                })
+                analog_rm_count += 1
+            elif a_filter['analog_rm'] in [2]:
+                group_id = rm['Аналогия'][ind_rm]
+                analog_rm = models_dict['analog_rm'].get(group_id)
+                if analog_rm is None:
+                    models_dict['analog_rm'][group_id] = []
+                    main = rm_count
+                else:
+                    main = analog_rm['main']
+                models_dict['analog_rm'][unique_analog_str].append({
+                    'id': analog_rm_count,
+                    'group_id': group_id,
+                    'rm_id': rm_count,
+                    'main': main
+                })
+                analog_rm_count += 1
 
         sout_dop_info_fact_ = sout_dop_info_fact.copy()
         sout_dop_info_fact_ = sout_dop_info_fact_[sout_dop_info_fact_['Номер рабочего места'] == rm_num]
@@ -167,8 +216,8 @@ def fill_models_dict(filename, a_filter):
         models_dict['sout_dop_info_fact'].append({
             'id': sout_dop_info_fact_count,
             'rm_id': rm_count,
-            'oborud': rm['Используемое оборудование в работе'][ind_rm],
-            'material': rm['Используемые материалы и сырье'][ind_rm],
+            'oborud': oborud,
+            'material': material,
             'dopl': yes_no_dict[dopl_],
             #'dopl_txt': None,
             'dop_otpusk': yes_no_dict[dop_otpusk_],
@@ -217,7 +266,7 @@ def fill_models_dict(filename, a_filter):
         indent_count += 1
         rm_count += 1
 
-        ceh_name = rm['Название подразделения'][ind_rm]
+
         struct_ceh = models_dict['struct_ceh'].get(ceh_name, None)
         if struct_ceh:
             uch_ceh_id = struct_ceh['id']
@@ -284,18 +333,6 @@ def fill_models_dict(filename, a_filter):
                     rm_uch_id = struct_uch_caption['id']
 
             models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
-#        models_dict['struct_uch'].append({
-#                'id': uch_count,
-#                'par_id': '0',
-#                'ceh_id': uch_ceh_id,
-#                'node_level': '0',
-#                'caption': rm['Отдел'][ind_rm],
-#                'code': None,
-#                'deleted': '0',
-#                'm_order': '1',
-#                'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
-#            })
-#        uch_count += 1
 
     models_dict['struct_org'].append({
         'id': org_id,
@@ -412,24 +449,23 @@ def write_xml(models_dict, filename):
                 if value_ is not None:
                     subxml = Et.SubElement(struct_uch_, key_)
                     subxml.text = f'{value_}'
-#    for struct_uch in models_dict['struct_uch']:
-#        struct_uch_ = Et.SubElement(xml, 'struct_uch')
-#        for key, value in struct_uch.items():
-#            if value is not None:
-#                subxml = Et.SubElement(struct_uch_, key)
-#                subxml.text = f'{value}'
+
 
     tree = Et.ElementTree(xml)
     Et.indent(tree, '  ')
-    filename = filename.split('/')[-1].split('.')[0]
-    tree.write(f'mediafiles/xml/{filename}.xml', encoding='utf-8', xml_declaration=True, short_empty_elements=False)
-    with zipfile.ZipFile(f'mediafiles/xml/{filename}.zip', 'w') as zip_file:
-        zip_file.write(f'mediafiles/xml/{filename}.xml', f'{filename}.xml',
+    file_dir, filename = filename.split('/')[-2::]
+    filename = filename.split('.')[0]
+    save_path = f'mediafiles/xml/{file_dir}/'
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    tree.write(f'{save_path}{filename}.xml', encoding='utf-8', xml_declaration=True, short_empty_elements=False)
+    with zipfile.ZipFile(f'{save_path}{filename}.zip', 'w') as zip_file:
+        zip_file.write(f'{save_path}{filename}.xml', f'{filename}.xml',
                        compress_type=zipfile.ZIP_DEFLATED)
 
     time.sleep(0.5)
 
     file = Files.objects.get(name=f'{filename}.zip')
-    file.fileField = f'xml/{filename}.zip'
+    file.fileField = f'xml/{file_dir}/{filename}.zip'
     file.save()
     return status, 'success'

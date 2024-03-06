@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+     <style>
+        .form-signin {
+            margin-top: 20%; /* Отступ сверху для формы */
+        }
+    </style>
+</head>
+<body>
+    <div class="container"> <!-- Добавлен класс "mt-5" для создания отступа сверху -->
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <form class="form-signin" method="post">
+                    {% csrf_token %}
+                    <h2 class="form-signin-heading text-center">Авторизация</h2>
+                    {% if msg %}
+                        <div class="alert alert-danger">{{ msg }}</div>
+                    {% endif %}
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                    {{ form.password.label_tag }}
+                    {{ form.password }}
+                    <button class="btn btn-lg btn-primary btn-block" type="submit">Войти</button>
+                </form>
+            </div>
+        </div>
+    </div> <!-- /container -->
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</body>
+</html>

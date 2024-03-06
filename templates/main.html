@@ -26,7 +26,13 @@
 <body>
 
 <div class="col-12">
+    <h2>Пользователь: <i>{{user.username}}</i></h2>
     <h1><b>Конвертер</b></h1>
+</div>
+<div>
+    {% if msg %}
+        <div class="alert alert-warning col-4">{{ msg }}</div>
+    {% endif %}
 </div>
 <div class="modal fade" id="setModal2" role="dialog">
     <div class="modal-dialog modal-lg">
@@ -103,12 +109,21 @@
         <form method="POST" action="{% url 'web_part:create_xml'%}" enctype="multipart/form-data">
             {% csrf_token %}
             <ul class="list-unstyled">
-                <h5>Фактический адрес проведения СОУТ: </h5>
+                <h5>Фактический адрес: </h5>
                 <div class="input-group mb-3">
                     <select class="custom-select" id="adress" name="adress" required>
-                        <option selected value="1">Подразделения</option>
-                        <option value="2">Рабочие места</option>
-                        <option value="3">Обе таблицы</option>
+                        <option value="1">struct_ceh</option>
+                        <option value="2">struct_rm</option>
+                        <option selected value="3">Обе</option>
+                    </select>
+                </div>
+
+                <h5>Аналогичные рабочие места: </h5>
+                <div class="input-group mb-3">
+                    <select class="custom-select" id="analog_rm" name="analog_rm" required>
+                        <option selected value="1">Автоматически</option>
+                        <option value="2">Вручную</option>
+                        <option  value="3">Не считать</option>
                     </select>
                 </div>
             <li>
@@ -126,7 +141,8 @@
             <th>Имя файла</th>
             <th>Дата создания</th>
             <th>Тип</th>
-            <th>Статус </th>
+            <th>Статус</th>
+            <th>Удалить</th>
             <th>Скачать</th>
         </tr>
     </thead>
@@ -152,6 +168,11 @@
                             {% else %}
                                 <span class="badge badge-danger">Ошибка</span>
                             {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if a.name %}
+                            <a href="{% url 'web_part:delete_file' a.name %}">Удалить</a>
                         {% endif %}
                     </td>
                     <td>

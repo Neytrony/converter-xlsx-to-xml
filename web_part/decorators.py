@@ -7,10 +7,10 @@ from web_part.models import Files
 def log_clearMediaDirs(path):
     def _logs(f):
         @wraps(f)
-        def inner(*args, **kwargs):
-            status, errors = clearMediaDir(path)
+        def inner(request, *args, **kwargs):
+            status, errors = clearMediaDir(f'{path}{request.user.username}/')
             if status:
-                return f(*args, **kwargs)
+                return f(request, *args, **kwargs)
             else:
                 with open('mediafiles/logs/error.log', 'w') as g:
                     g.write('Вознили ошибки при удалении следующих файлов: \n')
@@ -22,6 +22,8 @@ def log_clearMediaDirs(path):
 
 def clearMediaDir(path):
     errors = []
+    with open('mediafiles/logs/error.log', 'w') as g:
+        g.write(f'mediafiles/{path}')
     for r, dirs, files in os.walk(f'mediafiles/{path}'):
         for name in files:
             if fnmatch.fnmatch(name, "*.csv") or fnmatch.fnmatch(name, "*.xls*") or fnmatch.fnmatch(name, "*.zip") or fnmatch.fnmatch(name, "*.xml"):
