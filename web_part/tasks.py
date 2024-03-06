@@ -4,6 +4,7 @@ import zipfile
 import datetime
 import time
 import uuid
+import numpy as np
 import xml.etree.ElementTree as Et
 from web_part.models import Files
 
@@ -31,9 +32,8 @@ def check_excel(path):
                           "Выполняемая операция и время ее выполнения в % от смены",
                           "Краткое описание выполняемых работ", "Используемое оборудование в работе",
                           "Используемые материалы и сырье", "Название подразделения", "Отдел",
-                          "Кол-во человек на рабочем месте"],
-        'Сотрудники': ["Номер рабочего места", "Снилс сотрудника", "Фамилия сотрудника", "Имя сотрудника",
-                       "Отчество сотрудника", "Пол сотрудника", "Группа инвалидности (при наличии)"],
+                          "Кол-во человек на рабочем месте", "Код ОК", "ЕТКС"],
+        'Сотрудники': ["Номер рабочего места", "Снилс сотрудника", "ФИО сотрудника", "Кол-во женщин на рабочем месте", "Группа инвалидности (при наличии)"],
         'Ранее проведенные СОУТ': ["Номер рабочего места", "Номер прошлой карты СОУТ",
                                    "Класс/подкласс условий труда (по результатам предыдущей АРМ/СОУТ) Если не проводилась, то написать НЕТ",
                                    "Доплата: да/нет", "Доп. отпуск: да/нет", "Сокр. раб. неделя: да/нет",
@@ -56,11 +56,12 @@ def check_excel(path):
 
 
 def fill_models_dict(filename, a_filter):
-    excel = pd.read_excel(filename, None)
-    req = excel['Реквизиты']
-    rm = excel['Рабочие места'].sort_values(by='Название подразделения')
-    employees = excel['Сотрудники']
-    comission = excel['Комиссия']
+    excel = pd.read_excel(filename, sheet_name=None, dtype=str)
+    req = excel['Реквизиты'].replace(np.nan, '')
+    rm = excel['Рабочие места'].sort_values(by='Название подразделения').replace(np.nan, '')
+    employees = excel['Сотрудники'].replace(np.nan, '')
+    comission = excel['Комиссия'].replace(np.nan, '')
+    sout_dop_info_fact = excel['Ранее проведенные СОУТ'].replace(np.nan, '')
 
     models_dict = {
         'struct_org': [],
@@ -68,6 +69,8 @@ def fill_models_dict(filename, a_filter):
         'struct_rm': [],
         'sout_rabs': [],
         'person': [],
+        'sout_ident': [],
+        'struct_uch': {},
         'sout_dop_info_fact': [],
     }
 
@@ -75,6 +78,8 @@ def fill_models_dict(filename, a_filter):
     rm_count = 1
     person_count = 1
     rabs_count = 1
+    indent_count = 1
+    uch_count = 1
     org_id = 1
     sout_dop_info_fact_count = 1
     ind_req = 0
@@ -93,32 +98,35 @@ def fill_models_dict(filename, a_filter):
             rm_people_count += 1
             models_dict['sout_rabs'].append({
                 'id': rabs_count,
-                'rm_id': rm_num,
-                'fio': f'{empl["Фамилия сотрудника"][ind_empl]} {empl["Имя сотрудника"][ind_empl]} {empl["Отчество сотрудника"][ind_empl]}',
+                'rm_id': rm_count,
+                'fio': empl["ФИО сотрудника"][ind_empl],
                 'snils': empl["Снилс сотрудника"][ind_empl],
                 'morder': rabs_count,
                 'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
             })
-            if empl["Пол сотрудника"][ind_empl] == 'ж' or empl["Пол сотрудника"][ind_empl] == 'Ж':
+            if empl["Кол-во женщин на рабочем месте"][ind_empl] == 1:
                 colwom += 1
             if empl["Группа инвалидности (при наличии)"][ind_empl] == 'Да':
                 ref_rm += 1
             rabs_count += 1
-
+        if a_filter['adress'] in [2, 3]:
+            short_code = rm['Фактический адрес местонахождения'][ind_rm]
+        else:
+            short_code = None
         a_rm = {
             'id': rm_count,
             'caption': rm['Наименование штатной единицы (должность)'][ind_rm],
             #'caption2': None,
-            #'short_code': None,
+            'short_code': short_code,
             'uch_id': 0,
             #'code': None,
-            #'codeok': None,
+            'codeok': rm['Код ОК'][ind_rm],
             #'col_anal_rm': None,
             'colrab_rm': rm_people_count,
             #'colrab_all': None,
             'colwom': colwom,
             #'col18': None,
-            #'etks': 'Отсутствует',
+            'etks': rm['ЕТКС'][ind_rm],
             #'file': None,
             #'result': -1,
             #'kut': None,
@@ -128,7 +136,7 @@ def fill_models_dict(filename, a_filter):
             'ind_code': rm_num,
             #'deleted': 0,
             'm_order': rm_count,
-            'timesmena': rm['График рабочих/\nвыходных дней: \n5\\2 или 1\\3 или 2\\2'][ind_rm],
+            'timesmena': '480',
             #'param': None,
             'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
             #'etks_memo': None,
@@ -140,26 +148,42 @@ def fill_models_dict(filename, a_filter):
             #'file_sout': None,
         }
 
+        sout_dop_info_fact_ = sout_dop_info_fact.copy()
+        sout_dop_info_fact_ = sout_dop_info_fact_[sout_dop_info_fact_['Номер рабочего места'] == rm_num]
+        dopl_ = sout_dop_info_fact_['Доплата: да/нет'].values[0]
+        dop_otpusk_ = sout_dop_info_fact_['Доп. отпуск: да/нет'].values[0]
+        week_ = sout_dop_info_fact_['Сокр. раб. неделя: да/нет'].values[0]
+        milk_ = sout_dop_info_fact_['Досрочная пенсия: да (по какому списку)/нет'].values[0]
+        lpo_ = sout_dop_info_fact_['Молоко: да/нет'].values[0]
+        medosm_ = sout_dop_info_fact_['Медосмотр: да/нет'].values[0]
+        yes_no_dict = {
+            'Да': 1,
+            'да': 1,
+            'Нет': 0,
+            'нет': 0,
+            '': None
+        }
+
         models_dict['sout_dop_info_fact'].append({
             'id': sout_dop_info_fact_count,
             'rm_id': rm_count,
             'oborud': rm['Используемое оборудование в работе'][ind_rm],
             'material': rm['Используемые материалы и сырье'][ind_rm],
-            'dopl': a_filter['dopl'],
+            'dopl': yes_no_dict[dopl_],
             #'dopl_txt': None,
-            'dop_otpusk': a_filter['dop_otpusk'],
+            'dop_otpusk': yes_no_dict[dop_otpusk_],
             #'dop_otpusk_txt': None,
-            'week': a_filter['week'],
+            'week': yes_no_dict[week_],
             #'week_txt': None,
-            'milk': a_filter['milk'],
+            'milk': yes_no_dict[milk_],
             #'milk_txt': None,
             #'profpit': 0,
             #'profpit_txt': None,
-            'lpo': a_filter['lpo'],
+            'lpo': yes_no_dict[lpo_],
             #'lpo_txt': None,
-            'medosm': 1,
+            'medosm': yes_no_dict[medosm_],
             # 'medosm_txt': None,
-            # 'operac_t': 'Физические нагрузки',
+            'operac_t': rm['Краткое описание выполняемых работ'][ind_rm],
             # 'operac_n': None,
             # 'pevm': None,
             # 'dop_shum': None,
@@ -172,13 +196,39 @@ def fill_models_dict(filename, a_filter):
             #'dop_bio': 'Физические нагрузки',
         })
         sout_dop_info_fact_count += 1
+        sout_indent_kut_ = sout_dop_info_fact_['Класс/подкласс условий труда (по результатам предыдущей АРМ/СОУТ) Если не проводилась, то написать НЕТ'].values[0]
+        if sout_indent_kut_ is None:
+            sout_indent_kut_ = 'Нет'
+        models_dict['sout_ident'].append({
+            'id': indent_count,
+            'rm_id': rm_count,
+            'is_ident': '-1',
+            'is_travma': '0',
+            'is_profzab': '0',
+            'kut': sout_indent_kut_,
+            'is_rab': '1',
+            'rab_descr': None,
+            'is_pk6': '0',
+            'is_dop1': '0',
+            'is_dop2': '0',
+            'dop1': '0',
+            'dop2': '0~~~~~~~~~~',
+        })
+        indent_count += 1
         rm_count += 1
 
         ceh_name = rm['Название подразделения'][ind_rm]
         struct_ceh = models_dict['struct_ceh'].get(ceh_name, None)
         if struct_ceh:
+            uch_ceh_id = struct_ceh['id']
+            a_rm['ceh_id'] = struct_ceh['id']
             struct_ceh['struct_rm'].append(a_rm)
         else:
+            a_rm['ceh_id'] = ceh_count
+            if a_filter['adress'] in [1, 3]:
+                adr = rm['Фактический адрес местонахождения'][ind_rm]
+            else:
+                adr = None
             models_dict['struct_ceh'][ceh_name] = {
                 'id': ceh_count,
                 'org_id': org_id,
@@ -186,7 +236,7 @@ def fill_models_dict(filename, a_filter):
                 'caption': ceh_name,
                 #'short_caption': None,
                 #'code': None,
-                'adr': rm['Фактический адрес местонахождения'][ind_rm],
+                'adr': adr,
                 #'deleted': 0,
                 'm_order': ceh_count,
                 #'param': None,
@@ -194,25 +244,76 @@ def fill_models_dict(filename, a_filter):
                 #'caption2': None,
                 'struct_rm': [a_rm]
             }
+            uch_ceh_id = ceh_count
             ceh_count += 1
+
+        struct_uch_ = models_dict['struct_uch'].get(uch_ceh_id, None)
+        uch_caption = rm['Отдел'][ind_rm]
+        if uch_caption != '':
+            if struct_uch_ is None:
+                models_dict['struct_uch'][uch_ceh_id] = {uch_caption: {
+                        'id': uch_count,
+                        'par_id': '0',
+                        'ceh_id': uch_ceh_id,
+                        'node_level': '0',
+                        'caption': uch_caption,
+                        'code': None,
+                        'deleted': '0',
+                        'm_order': '1',
+                        'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
+                    }}
+                rm_uch_id = uch_count
+                uch_count += 1
+            else:
+                struct_uch_caption = struct_uch_.get(uch_caption, None)
+                if struct_uch_caption is None:
+                    struct_uch_[uch_caption] = {
+                        'id': uch_count,
+                        'par_id': '0',
+                        'ceh_id': uch_ceh_id,
+                        'node_level': '0',
+                        'caption': uch_caption,
+                        'code': None,
+                        'deleted': '0',
+                        'm_order': '1',
+                        'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
+                    }
+                    rm_uch_id = uch_count
+                    uch_count += 1
+                else:
+                    rm_uch_id = struct_uch_caption['id']
+
+            models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
+#        models_dict['struct_uch'].append({
+#                'id': uch_count,
+#                'par_id': '0',
+#                'ceh_id': uch_ceh_id,
+#                'node_level': '0',
+#                'caption': rm['Отдел'][ind_rm],
+#                'code': None,
+#                'deleted': '0',
+#                'm_order': '1',
+#                'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
+#            })
+#        uch_count += 1
 
     models_dict['struct_org'].append({
         'id': org_id,
-        'caption': org_name,
+        'caption': req['Полное наименование организации'][ind_req],
         'short_caption': req['ОГРН'][ind_req],
         #'code': None,
         'kod1': req['ОКПО'][ind_req],
         'kod2': req['ОКОГУ'][ind_req],
-        'kod3': req['ОКВЭД'][ind_req],
+        'kod3': f"{req['ОКВЭД'][ind_req]}",
         'kod4': req['ОКАТО'][ind_req],
-        'org': req['ОГРН'][ind_req],
+        'org': req['Полное наименование организации'][ind_req],
         'adr': req['Юр адрес'][ind_req],
         'm_order': org_id,
         #'deleted': 0,
         #'param': None,
         'inn': req['ИНН'][ind_req],
         'fio': req['ФИО руководителя'][ind_req],
-        #'contact': None,
+        'contact': req['Электронная почта'][ind_req],
         #'kom_flag': 0,
         'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
         #'adr2': None,
@@ -296,6 +397,27 @@ def write_xml(models_dict, filename):
             if value is not None:
                 subxml = Et.SubElement(dop_info_fact_, key)
                 subxml.text = f'{value}'
+
+    for sout_indent in models_dict['sout_ident']:
+        sout_indent_ = Et.SubElement(xml, 'sout_ident')
+        for key, value in sout_indent.items():
+            if value is not None:
+                subxml = Et.SubElement(sout_indent_, key)
+                subxml.text = f'{value}'
+
+    for struct_uch_key, struct_uch_value in models_dict['struct_uch'].items():
+        for key, value in struct_uch_value.items():
+            struct_uch_ = Et.SubElement(xml, 'struct_uch')
+            for key_, value_ in value.items():
+                if value_ is not None:
+                    subxml = Et.SubElement(struct_uch_, key_)
+                    subxml.text = f'{value_}'
+#    for struct_uch in models_dict['struct_uch']:
+#        struct_uch_ = Et.SubElement(xml, 'struct_uch')
+#        for key, value in struct_uch.items():
+#            if value is not None:
+#                subxml = Et.SubElement(struct_uch_, key)
+#                subxml.text = f'{value}'
 
     tree = Et.ElementTree(xml)
     Et.indent(tree, '  ')

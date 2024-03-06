@@ -23,7 +23,7 @@ def get_session_message(request):
         message = 'Error'
     return message
 
-
+#@login_required(login_url='admin')
 def MainPage(request):
     # Получение списков файлов, которые нужно отобразить(есть в базе данных)
     message = get_session_message(request)
@@ -59,16 +59,8 @@ def create_xml(request):
     if request.method == 'POST':
         req_dict = dict(request.POST)
         a_filter = {
-            'dopl': req_dict['dopl'][0],
-            'dop_otpusk': req_dict['dop_otpusk'][0],
-            'week': req_dict['week'][0],
-            'lpo': req_dict['lpo'][0],
-            'milk': req_dict['milk'][0],
-            'medosm': req_dict['medosm'][0],
+            'adress': int(req_dict['adress'][0]),
         }
-        if any(a_filter.values()) == None:
-            request.session['message'] = 'Не все значения заполнены'
-            return HttpResponseRedirect('/')
 
         filename = Files.objects.filter(type=1).order_by('createdAt').last().name
         task = create_xml_task.delay(filename, a_filter)
@@ -77,6 +69,29 @@ def create_xml(request):
                              status=task_result.status)
         request.session['message'] = 'Началась обработка файла'
     return HttpResponseRedirect('/')
+#@log_clearMediaDirs('xml/')
+#def create_xml(request):
+#    if request.method == 'POST':
+#        req_dict = dict(request.POST)
+#        a_filter = {
+#            'dopl': req_dict['dopl'][0],
+#            'dop_otpusk': req_dict['dop_otpusk'][0],
+#            'week': req_dict['week'][0],
+#            'lpo': req_dict['lpo'][0],
+#            'milk': req_dict['milk'][0],
+#            'medosm': req_dict['medosm'][0],
+#        }
+#        if any(a_filter.values()) == None:
+#            request.session['message'] = 'Не все значения заполнены'
+#            return HttpResponseRedirect('/')
+#
+#        filename = Files.objects.filter(type=1).order_by('createdAt').last().name
+#        task = create_xml_task.delay(filename, a_filter)
+#        task_result = AsyncResult(task.id)
+#        Files.objects.create(name=f"{filename.split('.')[0]}.zip", type=2, task_id=task.id,
+#                             status=task_result.status)
+#        request.session['message'] = 'Началась обработка файла'
+#    return HttpResponseRedirect('/')
 def update_status(files):
     for file in files:
         task_result = AsyncResult(file.task_id)

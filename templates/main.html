@@ -68,67 +68,51 @@
         <div class="card-header">
             <h3 class="card-title"><b>Загрузка файла</b></h3>
         </div>
-        <div class="card-body">
-           <a class="btn btn-app" data-toggle="modal" data-target="#setModal2">
-               <i class="fas fa-upload" ></i> Выберите Excel файл
-           </a>
 
-        </div>
-    </div>
+        <div class="card-body d-flex justify-content-between align-items-center">
+           <div class="d-flex">
+               <a class="btn btn-app" data-toggle="modal" data-target="#setModal2">
+                   <i class="fas fa-upload" ></i> Выберите Excel файл
+               </a>
+
+               <a href="/media/Исходные данные.xlsx" download class="btn btn-app">
+                   <i class="fas fa-download"></i> Скачать шаблон Excel
+               </a>
+           </div>
+
 </div>
+
+        <div class="list-unstyled" style="margin: 20px">
+            <p class="list-unstyled">
+<b>Шаг 1.</b> Скачайте шаблон Excel файла, заполните поля на всех листах </br>
+<b>Из шаблона нельзя удалять никаких столбцов, иначе появится ошибка при попытке загрузить заполненный файл!</b> </br>
+<b>В таблицах не должно быть объединённых ячеек!</b> </br>
+<b>Шаг 2.</b> Загрузите заполненный файл по кнопке 'Выберите Excel файл'. Снизу вы увидите запись об успешной загрузке файла </br>
+<b>Шаг 3.</b> Настройте фильтр фактического адреса СОУТ. От указаного выбора адрес будет добавлен в нужные табилцы </br>
+<b>Шаг 4.</b> Нажмите на конпку 'Сформировать XML'. Снизу появится запись со статусом 'Обрабатывается'. Обновляйте страницу с промежутком в пару секунд пока не появтися статус 'Готово', после чего скачивайте архив </br>
+<b>Шаг 5.</b> Распакуйте файл из архива. В программе АРМ 5.1 создайте пустую базу, откройте её через Microsoft Access. Перейдите во вкладку 'Внешние данные'. Выберите создать источник данных -> Из файла -> XML-файл. Через кнопку 'Обзор...' выберите распакованный файл, нажмите 'Ок'. В параметрах импорта выберите пункт 'Добавить данные в таблицы', нажмите 'ОК'. Закройте окно импорта и саму базу </br>
+<b>Шаг 6.</b> Через программу АРМ 5.1 выберите нужную базу
+            </p>
+         </div>
 
 <div class="row">
     <div class="card col-12">
         <div class="card-header">
-            <h3 class="card-title"><b>Выгрузка xml</b></h3>
+            <h3 class="card-title"><b>Фильтры:</b></h3>
         </div>
         <form method="POST" action="{% url 'web_part:create_xml'%}" enctype="multipart/form-data">
             {% csrf_token %}
             <ul class="list-unstyled">
-                <h5>Выберите значение dopl: </h5>
-                <div class="input-group mb-2">
-                    <select class="custom-select" id="dopl" name="dopl" required>
-                        <option selected value="1">Да</option>
-                        <option selected value="0">Нет</option>
-                    </select>
-                </div>
-                <h5>Выберите значение dop_otpusk: </h5>
+                <h5>Фактический адрес проведения СОУТ: </h5>
                 <div class="input-group mb-3">
-                    <select class="custom-select" id="dop_otpusk" name="dop_otpusk" required>
-                        <option selected value="1">Да</option>
-                        <option selected value="0">Нет</option>
-                    </select>
-                </div>
-                <h5>Выберите значение week: </h5>
-                <div class="input-group mb-3">
-                    <select class="custom-select" id="week" name="week" required>
-                        <option selected value="1">Да</option>
-                        <option selected value="0">Нет</option>
-                    </select>
-                </div>
-                <h5>Выберите значение medosm: </h5>
-                <div class="input-group mb-3">
-                    <select class="custom-select" id="medosm" name="medosm" required>
-                        <option selected value="1">Да</option>
-                        <option selected value="0">Нет</option>
-                    </select>
-                </div>
-                <h5>Выберите значение lpo: </h5>
-                <div class="input-group mb-3">
-                    <select class="custom-select" id="lpo" name="lpo" required>
-                        <option selected value="1">Да</option>
-                        <option selected value="0">Нет</option>
-                    </select>
-                </div>
-                <h5>Выберите значение milk: </h5>
-                <div class="input-group mb-3">
-                    <select class="custom-select" id="milk" name="milk" required>
-                        <option selected value="1">Да</option>
-                        <option selected value="0">Нет</option>
+                    <select class="custom-select" id="adress" name="adress" required>
+                        <option selected value="1">Подразделения</option>
+                        <option value="2">Рабочие места</option>
+                        <option value="3">Обе таблицы</option>
                     </select>
                 </div>
             <li>
-                <button type="submit" class="btn btn-block btn-primary"> Загрузить</button>
+                <button type="submit" class="btn btn-block btn-primary">Сформировать XML</button>
             </li>
             </ul>
         </form>
