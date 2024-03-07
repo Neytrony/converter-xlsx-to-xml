@@ -59,7 +59,7 @@ def check_excel(path):
 def fill_models_dict(filename, a_filter):
     excel = pd.read_excel(filename, sheet_name=None, dtype=str)
     req = excel['Реквизиты'].replace(np.nan, '')
-    rm = excel['Рабочие места'].sort_values(by='Название подразделения').replace(np.nan, '')
+    rm = excel['Рабочие места'].sort_values(by=['Название подразделения', 'Номер рабочего места']).replace(np.nan, '')
     employees = excel['Сотрудники'].replace(np.nan, '')
     comission = excel['Комиссия'].replace(np.nan, '')
     sout_dop_info_fact = excel['Ранее проведенные СОУТ'].replace(np.nan, '')
