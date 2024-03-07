@@ -108,7 +108,7 @@ def fill_models_dict(filename, a_filter):
                 'morder': rabs_count,
                 'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
             })
-            if empl["Кол-во женщин на рабочем месте"][ind_empl] == 1:
+            if empl["Кол-во женщин на рабочем месте"][ind_empl] == '1':
                 colwom += 1
             if empl["Группа инвалидности (при наличии)"][ind_empl] == 'Да':
                 ref_rm += 1
@@ -386,9 +386,10 @@ def fill_models_dict(filename, a_filter):
             #'uch_id': 0,
             'proff': comission['Должность члена комиссии'][ind_com],
             'name': comission['Фио члена комиссии'][ind_com],
-            #'chlen_type': 1,
+            'chlen_type': 1,
         })
         person_count += 1
+    models_dict['person'][0]['chlen_type'] = 0
 
     return models_dict
 
