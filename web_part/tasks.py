@@ -209,7 +209,7 @@ def fill_models_dict(filename, a_filter):
                     else:
                         analog_rm = analog_rm[0]
                         main = analog_rm['main']
-                    models_dict['analog_rm'][unique_analog_str].append({
+                    models_dict['analog_rm'][group_id].append({
                         'id': analog_rm_count,
                         'group_id': group_id,
                         'rm_id': rm_count,
@@ -402,8 +402,6 @@ def fill_models_dict(filename, a_filter):
                     rm_uch_id = struct_uch_caption['id']
 
             models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
-
-
 
     models_dict['struct_org'].append({
         'id': org_id,
