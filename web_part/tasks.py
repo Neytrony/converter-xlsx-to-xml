@@ -259,7 +259,7 @@ def fill_models_dict(filename, a_filter):
             # 'dop_vibr_loc': None,
             # 'dop_him': None,
             #'dop_apfd': None,
-            #'dop_bio': 'Физические нагрузки',
+            'dop_bio': rm['Источник вредного фактора'][ind_rm],
         })
         sout_dop_info_fact_count += 1
         sout_indent_kut_ = sout_dop_info_fact_['Класс/подкласс условий труда (по результатам предыдущей АРМ/СОУТ) Если не проводилась, то написать НЕТ'].values[0]
