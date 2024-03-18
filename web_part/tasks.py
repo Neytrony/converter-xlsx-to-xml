@@ -208,7 +208,6 @@ def fill_models_dict(filename, a_filter):
                     else:
                         a_count = analog_rm['count']
                         main = analog_rm['main']
-                        analog_rm = analog_rm[0]
                         if a_count == 1:
                             analog_rm['analog_rms'].append({
                                 'id': analog_rm_count,
