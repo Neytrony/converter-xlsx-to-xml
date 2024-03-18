@@ -63,6 +63,7 @@ def fill_models_dict(filename, a_filter):
     employees = excel['Сотрудники'].replace(np.nan, '')
     comission = excel['Комиссия'].replace(np.nan, '')
     sout_dop_info_fact = excel['Ранее проведенные СОУТ'].replace(np.nan, '')
+    per_rzona = excel['Рабочие зоны'].replace(np.nan, '')
 
     models_dict = {
         'struct_org': [],
@@ -73,7 +74,9 @@ def fill_models_dict(filename, a_filter):
         'sout_ident': [],
         'struct_uch': {},
         'sout_dop_info_fact': [],
-        'analog_rm': {}
+        'analog_rm': {},
+        'per_rzona': [],
+        'per_gigfactors': [],
     }
 
     ceh_count = 1
@@ -87,6 +90,8 @@ def fill_models_dict(filename, a_filter):
     ind_req = 0
     analog_rm_count = 1
     analog_rm_group = 1
+    per_rzona_count = 1
+    per_gigfactors_count = 1
 
     org_name = req['Полное наименование организации'][ind_req]
 
@@ -391,6 +396,46 @@ def fill_models_dict(filename, a_filter):
         person_count += 1
     models_dict['person'][0]['chlen_type'] = 0
 
+    for ind_per in per_rzona.index:
+        models_dict['per_rzona'].append({
+            "id": per_rzona_count,
+            "tabl4_id": per_rzona['Номер рабочего места'][ind_per],
+            "caption": per_rzona['Название зоны'][ind_per],
+            "time": per_rzona['Учёт времени в %'][ind_per],
+            "morder": 0,
+            "mintime": 0,
+        })
+        gigfactors = per_rzona['Факторы'][ind_per].replace(' ', '').split(',')
+        gigfactor_dict = {
+            'ХИМ': ('Химический', 1),
+            'БИО': ('Биологический', 2),
+            'АПФД': ('Аэрозоли ПФД', 3),
+            'ШУМ': ('Шум', 4),
+            'ИНФР': ('Инфразвук', 5),
+            'УЗ': ('Ультразвук', 6),
+            'ВиО': ('Вибрация общая', 7),
+            'ВиЛ': ('Вибрация локальная', 8),
+            'ЭМП': ('ЭМП', 9),
+            'РАД': ('Ионизирующие излучения', 10),
+            'МИКР': ('Микроклимат', 11),
+            'ОСВ': ('Освещение', 12),
+            'УФИ': ('Ультрафиолетовое излучение', 26),
+            'ЛИ': ('Лазерное излучение', 41),
+        }
+        for gigfactor in gigfactors:
+            if gigfactor != '':
+                gigfactor = gigfactor.upper()
+                models_dict['per_gigfactors'].append({
+                    "id": per_gigfactors_count,
+                    "rzona_id": per_rzona_count,
+                    "factor_id": gigfactor_dict[gigfactor][1],
+                    "caption": gigfactor_dict[gigfactor][0],
+                    "proctime": 0,
+                    "mintime": 0,
+                })
+                per_gigfactors_count += 1
+        per_rzona_count += 1
+
     return models_dict
 
 
@@ -478,6 +523,19 @@ def write_xml(models_dict, filename):
                             subxml = Et.SubElement(analog_rm_, key_)
                             subxml.text = f'{value_}'
 
+    for per_rzona in models_dict['per_rzona']:
+        per_rzona_ = Et.SubElement(xml, 'per_rzona')
+        for key_, value_ in per_rzona.items():
+            if value_ is not None:
+                subxml = Et.SubElement(per_rzona_, key_)
+                subxml.text = f'{value_}'
+
+    for per_gigfactors in models_dict['per_gigfactors']:
+        per_gigfactors_ = Et.SubElement(xml, 'per_gigfactors')
+        for key_, value_ in per_gigfactors.items():
+            if value_ is not None:
+                subxml = Et.SubElement(per_gigfactors_, key_)
+                subxml.text = f'{value_}'
 
     tree = Et.ElementTree(xml)
     Et.indent(tree, '  ')
