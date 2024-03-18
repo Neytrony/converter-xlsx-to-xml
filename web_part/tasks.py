@@ -204,18 +204,27 @@ def fill_models_dict(filename, a_filter):
                 if group_id != '':
                     analog_rm = models_dict['analog_rm'].get(group_id)
                     if analog_rm is None:
-                        models_dict['analog_rm'][group_id] = []
-                        main = rm_count
+                        models_dict['analog_rm'][group_id] = {'analog_rms': [], 'count': 1, 'main': rm_count}
                     else:
-                        analog_rm = analog_rm[0]
+                        a_count = analog_rm['count']
                         main = analog_rm['main']
-                    models_dict['analog_rm'][group_id].append({
-                        'id': analog_rm_count,
-                        'group_id': group_id,
-                        'rm_id': rm_count,
-                        'main': main
-                    })
-                    analog_rm_count += 1
+                        analog_rm = analog_rm[0]
+                        if a_count == 1:
+                            analog_rm['analog_rms'].append({
+                                'id': analog_rm_count,
+                                'group_id': group_id,
+                                'rm_id': main,
+                                'main': main
+                            })
+                            analog_rm_count += 1
+
+                        analog_rm['analog_rms'].append({
+                            'id': analog_rm_count,
+                            'group_id': group_id,
+                            'rm_id': rm_count,
+                            'main': main
+                        })
+                        analog_rm_count += 1
 
         sout_dop_info_fact_ = sout_dop_info_fact.copy()
         sout_dop_info_fact_ = sout_dop_info_fact_[sout_dop_info_fact_['Номер рабочего места'] == rm_num]
