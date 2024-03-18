@@ -184,8 +184,10 @@ def fill_models_dict(filename, a_filter):
                             'rm_id': main,
                             'main': main
                         })
-                        analog_rm_count += 1
+
                         analog_rm['group_id'] = analog_rm_group
+                        analog_rm_count += 1
+                        analog_rm_group += 1
 
                     group_id = analog_rm.get('group_id')
                     analog_rm['analog_rms'].append({
