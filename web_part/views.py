@@ -9,7 +9,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from web_part.decorators import log_clearMediaDirs
+from web_part.decorators import log_clearMediaDirs, log_user_action
 from web_part.tasks import read_excel, Files, create_xml_task
 from web_part.forms import LoginForm
 
@@ -40,6 +40,7 @@ def MainPage(request):
 
 @login_required(login_url='web_part:login')
 @log_clearMediaDirs('excel/')
+@log_user_action()
 def upload_excel(request):
     if request.method == 'POST':
         # Загрузка и сохранение файла
@@ -55,7 +56,7 @@ def upload_excel(request):
                     # Если путь не существует, создаем папку
                     os.makedirs(f'mediafiles/{save_path}')
                 FileSystemStorage().save(full_save_path, uploaded_file)
-                task = read_excel.delay(full_save_path)
+                task = read_excel.delay(username, full_save_path)
                 task_result = AsyncResult(task.id)
                 Files.objects.create(name=fileName, user=user, type=1, fileField=full_save_path, task_id=task.id, status=task_result.status)
                 request.session['message'] = 'Началась обработка файла'
@@ -68,6 +69,7 @@ def upload_excel(request):
 
 @login_required(login_url='web_part:login')
 @log_clearMediaDirs('xml/')
+@log_user_action()
 def create_xml(request):
     if request.method == 'POST':
         req_dict = dict(request.POST)
@@ -80,7 +82,7 @@ def create_xml(request):
         if filename is not None:
             filename = filename.name
             full_path = f'excel/{user.username}/{filename}'
-            task = create_xml_task.delay(full_path, a_filter)
+            task = create_xml_task.delay(user.username, full_path, a_filter)
             task_result = AsyncResult(task.id)
             Files.objects.create(name=f"{filename.split('.')[0]}.zip", type=2, task_id=task.id,
                                  status=task_result.status, user=user)
@@ -97,6 +99,7 @@ def update_status(files):
         file.save()
 
 
+@log_user_action()
 def delete_file(request, filename):
     file = Files.objects.filter(user=request.user, name=filename)
     if file.exists():
