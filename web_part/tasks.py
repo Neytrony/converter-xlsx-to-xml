@@ -377,6 +377,10 @@ def fill_models_dict(filename, a_filter):
         struct_uch_ = models_dict['struct_uch'].get(uch_ceh_id, None)
         uch_caption = rm['Отдел'][ind_rm]
         if uch_caption != '':
+            if a_filter['adress'] in [1, 3]:
+                adr = rm['Фактический адрес местонахождения'][ind_rm]
+            else:
+                adr = None
             if struct_uch_ is None:
                 models_dict['struct_uch'][uch_ceh_id] = {uch_caption: {
                         'id': uch_count,
@@ -385,6 +389,7 @@ def fill_models_dict(filename, a_filter):
                         'node_level': '0',
                         'caption': uch_caption,
                         'code': None,
+                        'adr': adr,
                         'deleted': '0',
                         'm_order': '1',
                         'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
@@ -401,7 +406,7 @@ def fill_models_dict(filename, a_filter):
                         'node_level': '0',
                         'caption': uch_caption,
                         'code': None,
-                        'adr': None,
+                        'adr': adr,
                         'deleted': '0',
                         'm_order': '1',
                         'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
