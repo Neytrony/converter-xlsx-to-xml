@@ -224,6 +224,7 @@ def fill_models_dict(filename, a_filter):
                             'main': main
                         })
                         analog_rm_count += 1
+                        analog_rm['count'] = a_count + 1
 
         sout_dop_info_fact_ = sout_dop_info_fact.copy()
         sout_dop_info_fact_ = sout_dop_info_fact_[sout_dop_info_fact_['Номер рабочего места'] == rm_num]
@@ -400,6 +401,7 @@ def fill_models_dict(filename, a_filter):
                         'node_level': '0',
                         'caption': uch_caption,
                         'code': None,
+                        'adr': None,
                         'deleted': '0',
                         'm_order': '1',
                         'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
@@ -492,6 +494,7 @@ def write_xml(models_dict, filename):
                                                 subxml.text = f'{rm_value}'
                                             if rm_key == 'code':
                                                 subxml = Et.SubElement(struct_rm, rm_key)
+
     for pers in models_dict['person']:
         person_ = Et.SubElement(xml, 'person')
         for key, value in pers.items():
