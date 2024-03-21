@@ -1,4 +1,5 @@
 import os
+import datetime
 from functools import wraps
 import fnmatch
 from web_part.models import Files
@@ -37,3 +38,32 @@ def clearMediaDir(path):
         return False, errors
     else:
         return True, None
+
+
+def log_user_action():
+    def _logs(f):
+        @wraps(f)
+        def inner(request, *args, **kwargs):
+            result = f(request, *args, **kwargs)
+            funcs_names = {
+                "create_xml": "Запуск задачи создания xml файла",
+                "upload_excel": "Запуск задачи загрузки excel файла",
+                "delete_file": "Удаление файла",
+                "MainPage": "Заход на главную страницу",
+                "LoginPage": "Заход на страницу авторизации",
+                "create_xml_task": "Задача загрузки xml завершена",
+                "read_excel": "Задача загрузки excel завершена",
+            }
+            log_name = f'{datetime.datetime.now().strftime("%d-%m-%Y")}.log'
+            log_path = f'mediafiles/logs/log_action/{log_name}'
+            if not os.path.exists("/".join(log_path.split('/')[:-1])):
+                os.makedirs("/".join(log_path.split('/')[:-1]))
+            if type(request) != str:
+                username = request.user.username
+            else:
+                username = request
+            with open(log_path, 'a') as log:
+                log.write(f'{datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")}----{username}----{funcs_names[f.__name__]}----{args}\n')
+            return result
+        return inner
+    return _logs

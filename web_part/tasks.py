@@ -8,18 +8,22 @@ import time
 import uuid
 import xml.etree.ElementTree as Et
 from web_part.models import Files
+from web_part.decorators import log_user_action
 
 
 @app.task
-def read_excel(filename):
+@log_user_action()
+def read_excel(request, filename):
     full_path = f'mediafiles/{filename}'
     status = check_excel(full_path)
 
 
 @app.task
-def create_xml_task(filename, a_filter):
+@log_user_action()
+def create_xml_task(request, filename, a_filter):
     filename_excel = f'mediafiles/{filename}'
     write_xml(fill_models_dict(filename_excel, a_filter), filename_excel)
+    return True
 
 
 
