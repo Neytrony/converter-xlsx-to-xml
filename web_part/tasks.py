@@ -80,7 +80,7 @@ def fill_models_dict(filename, a_filter):
         'struct_uch': {},
         'sout_dop_info_fact': [],
         'analog_rm': {},
-        'per_rzona': [],
+        'per_rzona': {},
         'per_gigfactors': [],
     }
 
@@ -303,48 +303,6 @@ def fill_models_dict(filename, a_filter):
             'dop2': '0~~~~~~~~~~',
         })
 
-        perz = per_rzona.copy()
-        perz = perz[perz['Номер рабочего места'] == rm_num]
-        for ind_per in perz.index:
-            models_dict['per_rzona'].append({
-                "id": per_rzona_count,
-                "tabl4_id": rm_count,
-                "caption": per_rzona['Название зоны'][ind_per],
-                "time": per_rzona['Учёт времени в %'][ind_per],
-                "morder": 0,
-                "mintime": 0,
-            })
-            gigfactors = per_rzona['Факторы'][ind_per].replace(' ', '').split(',')
-            gigfactor_dict = {
-                'ХИМ': ('Химический', 1),
-                'БИО': ('Биологический', 2),
-                'АПФД': ('Аэрозоли ПФД', 3),
-                'ШУМ': ('Шум', 4),
-                'ИНФР': ('Инфразвук', 5),
-                'УЗ': ('Ультразвук', 6),
-                'ВИО': ('Вибрация общая', 7),
-                'ВИЛ': ('Вибрация локальная', 8),
-                'ЭМП': ('ЭМП', 9),
-                'РАД': ('Ионизирующие излучения', 10),
-                'МИКР': ('Микроклимат', 11),
-                'ОСВ': ('Освещение', 12),
-                'УФИ': ('Ультрафиолетовое излучение', 26),
-                'ЛИ': ('Лазерное излучение', 41),
-            }
-            for gigfactor in gigfactors:
-                if gigfactor != '':
-                    gigfactor = gigfactor.upper()
-                    models_dict['per_gigfactors'].append({
-                        "id": per_gigfactors_count,
-                        "rzona_id": per_rzona_count,
-                        "factor_id": gigfactor_dict[gigfactor][1],
-                        "caption": gigfactor_dict[gigfactor][0],
-                        "proctime": 0,
-                        "mintime": 0,
-                    })
-                    per_gigfactors_count += 1
-            per_rzona_count += 1
-
         indent_count += 1
         rm_count += 1
 
@@ -461,6 +419,54 @@ def fill_models_dict(filename, a_filter):
         person_count += 1
     models_dict['person'][0]['chlen_type'] = 0
 
+
+    for ind_per in per_rzona.index:
+        pzone = models_dict['per_rzona']
+
+        pz_tabl4_id = per_rzona['Номер рабочего места'][ind_per]
+        pz_caption = per_rzona['Название зоны'][ind_per]
+        pz = pzone.get(f'{pz_tabl4_id}_{pz_caption}')
+        if pz is None:
+            pzone[f'{pz_tabl4_id}_{pz_caption}'] = {
+                "id": per_rzona_count,
+                "tabl4_id": pz_tabl4_id,
+                "caption": pz_caption,
+                "time": per_rzona['Учёт времени в %'][ind_per],
+                "morder": 0,
+                "mintime": 0,
+            }
+            per_rzona_count += 1
+        gigfactors = per_rzona['Факторы'][ind_per].replace(' ', '').split(',')
+        gigfactor_dict = {
+            'ХИМ': ('Химический', 1),
+            'БИО': ('Биологический', 2),
+            'АПФД': ('Аэрозоли ПФД', 3),
+            'ШУМ': ('Шум', 4),
+            'ИНФР': ('Инфразвук', 5),
+            'УЗ': ('Ультразвук', 6),
+            'ВИО': ('Вибрация общая', 7),
+            'ВИЛ': ('Вибрация локальная', 8),
+            'ЭМП': ('ЭМП', 9),
+            'РАД': ('Ионизирующие излучения', 10),
+            'МИКР': ('Микроклимат', 11),
+            'ОСВ': ('Освещение', 12),
+            'УФИ': ('Ультрафиолетовое излучение', 26),
+            'ЛИ': ('Лазерное излучение', 41),
+        }
+
+        for gigfactor in gigfactors:
+            if gigfactor != '':
+                gigfactor = gigfactor.upper()
+                models_dict['per_gigfactors'].append({
+                    "id": per_gigfactors_count,
+                    "rzona_id": pz_tabl4_id,
+                    "factor_id": gigfactor_dict[gigfactor][1],
+                    "caption": gigfactor_dict[gigfactor][0],
+                    "proctime": 0,
+                    "mintime": 0,
+                })
+                per_gigfactors_count += 1
+
     return models_dict
 
 
@@ -549,7 +555,7 @@ def write_xml(models_dict, filename):
                             subxml = Et.SubElement(analog_rm_, key_)
                             subxml.text = f'{value_}'
 
-    for per_rzona in models_dict['per_rzona']:
+    for per_rzona in models_dict['per_rzona'].values():
         per_rzona_ = Et.SubElement(xml, 'per_rzona')
         for key_, value_ in per_rzona.items():
             if value_ is not None:
