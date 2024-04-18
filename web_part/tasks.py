@@ -362,51 +362,56 @@ def fill_models_dict(filename, a_filter):
             uch_ceh_id = ceh_count
             ceh_count += 1
 
-        struct_uch_ = models_dict['struct_uch'].get(uch_ceh_id, None)
+
         uch_caption = rm['Отдел'][ind_rm]
         if uch_caption != '':
             if a_filter['adress'] in [1, 3]:
                 adr = rm['Фактический адрес местонахождения'][ind_rm]
             else:
                 adr = None
-            if struct_uch_ is None:
-                models_dict['struct_uch'][uch_ceh_id] = {uch_caption: {
-                        'id': uch_count,
-                        'par_id': '0',
-                        'ceh_id': uch_ceh_id,
-                        'node_level': '0',
-                        'caption': uch_caption,
-                        'code': None,
-                        'adr': adr,
-                        'deleted': '0',
-                        'm_order': uch_count,
-                        'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
-                    }}
-                rm_uch_id = uch_count
-                uch_count += 1
-            else:
-                struct_uch_caption = struct_uch_.get(uch_caption, None)
-                if struct_uch_caption is None:
-                    struct_uch_[uch_caption] = {
-                        'id': uch_count,
-                        'par_id': '0',
-                        'ceh_id': uch_ceh_id,
-                        'node_level': '0',
-                        'caption': uch_caption,
-                        'code': None,
-                        'adr': adr,
-                        'deleted': '0',
-                        'm_order': uch_count,
-                        'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
-                    }
+            struct_uch_ = models_dict['struct_uch'].get(uch_ceh_id, None)
+            par_id = 0
+            nod_id = 0
+            if len(uch_caption.split('&')) > 1:
+                nod_id = 1
+            for cap in uch_caption.split('&'):
+                if struct_uch_ is None:
+                    models_dict['struct_uch'][uch_ceh_id] = {cap: {
+                            'id': uch_count,
+                            'par_id': par_id,
+                            'ceh_id': uch_ceh_id,
+                            'node_level': nod_id,
+                            'caption': cap,
+                            'code': None,
+                            'adr': adr,
+                            'deleted': '0',
+                            'm_order': uch_count,
+                            'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
+                        }}
+                    par_id = uch_count
                     rm_uch_id = uch_count
                     uch_count += 1
                 else:
-                    rm_uch_id = struct_uch_caption['id']
-
-            models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
-
-
+                    struct_uch_caption = struct_uch_.get(cap, None)
+                    if struct_uch_caption is None:
+                        struct_uch_[cap] = {
+                            'id': uch_count,
+                            'par_id': par_id,
+                            'ceh_id': uch_ceh_id,
+                            'node_level': nod_id,
+                            'caption': cap,
+                            'code': None,
+                            'adr': adr,
+                            'deleted': '0',
+                            'm_order': uch_count,
+                            'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
+                        }
+                        par_id = uch_count
+                        rm_uch_id = uch_count
+                        uch_count += 1
+                    else:
+                        rm_uch_id = struct_uch_caption['id']
+                models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
 
     models_dict['struct_org'].append({
         'id': org_id,
