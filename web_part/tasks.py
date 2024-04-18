@@ -82,6 +82,7 @@ def fill_models_dict(filename, a_filter):
         'analog_rm': {},
         'per_rzona': {},
         'per_gigfactors': [],
+        'per_genfactors': [],
     }
 
     ceh_count = 1
@@ -97,6 +98,7 @@ def fill_models_dict(filename, a_filter):
     analog_rm_group = 1
     per_rzona_count = 1
     per_gigfactors_count = 1
+    per_genfactors_count = 1
 
     org_name = req['Полное наименование организации'][ind_req]
 
@@ -303,6 +305,30 @@ def fill_models_dict(filename, a_filter):
             'dop2': '0~~~~~~~~~~',
         })
 
+        tajest = rm['Тяжесть труда'][ind_rm]
+        if tajest in ['Да', 'ДА', 'да', '1']:
+            models_dict['per_genfactors'].append({
+                'id': per_genfactors_count,
+                'tabl4_id': rm_count,
+                'caption': 'Тяжесть труда',
+                'time': 0,
+                'time2': 0,
+                'factor_id': 13,
+            })
+            per_genfactors_count += 1
+
+        napriajonost = rm['Напряженность труда'][ind_rm]
+        if napriajonost in ['Да', 'ДА', 'да', '1']:
+            models_dict['per_genfactors'].append({
+                'id': per_genfactors_count,
+                'tabl4_id': rm_count,
+                'caption': 'Напряженность труда',
+                'time': 0,
+                'time2': 0,
+                'factor_id': 14,
+            })
+            per_genfactors_count += 1
+
         indent_count += 1
         rm_count += 1
 
@@ -379,6 +405,8 @@ def fill_models_dict(filename, a_filter):
                     rm_uch_id = struct_uch_caption['id']
 
             models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
+
+
 
     models_dict['struct_org'].append({
         'id': org_id,
@@ -568,6 +596,13 @@ def write_xml(models_dict, filename):
             if value_ is not None:
                 subxml = Et.SubElement(per_gigfactors_, key_)
                 subxml.text = f'{value_}'
+
+    for per_genfactor in models_dict['per_genfactors']:
+        per_genfactor_ = Et.SubElement(xml, 'per_genfactors')
+        for key, value in per_genfactor.items():
+            if value is not None:
+                subxml = Et.SubElement(per_genfactor_, key)
+                subxml.text = f'{value}'
 
     tree = Et.ElementTree(xml)
     Et.indent(tree, '  ')
