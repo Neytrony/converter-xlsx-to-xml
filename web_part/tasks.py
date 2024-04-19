@@ -468,7 +468,10 @@ def fill_models_dict(filename, a_filter):
                 "morder": 0,
                 "mintime": 0,
             }
+            rzona_id = per_rzona_count
             per_rzona_count += 1
+        else:
+            rzona_id = pz['id']
         gigfactors = per_rzona['Факторы'][ind_per].replace(' ', '').split(',')
         gigfactor_dict = {
             'ХИМ': ('Химический', 1),
@@ -492,7 +495,7 @@ def fill_models_dict(filename, a_filter):
                 gigfactor = gigfactor.upper()
                 models_dict['per_gigfactors'].append({
                     "id": per_gigfactors_count,
-                    "rzona_id": pz_tabl4_id,
+                    "rzona_id": rzona_id,
                     "factor_id": gigfactor_dict[gigfactor][1],
                     "caption": gigfactor_dict[gigfactor][0],
                     "proctime": 0,
