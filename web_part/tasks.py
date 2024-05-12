@@ -73,11 +73,12 @@ def fill_models_dict(filename, a_filter):
     models_dict = {
         'struct_org': [],
         'struct_ceh': {},
-        'struct_rm': [],
+        'struct_rm': {},
         'sout_rabs': [],
         'person': [],
         'sout_ident': [],
         'struct_uch': {},
+        'struct_uch_info': {},
         'sout_dop_info_fact': [],
         'analog_rm': {},
         'per_rzona': {},
@@ -174,6 +175,7 @@ def fill_models_dict(filename, a_filter):
             #'kut2': None,
             #'file_sout': None,
         }
+        models_dict['struct_rm'][rm_num] = rm_count
 
         if a_filter['analog_rm'] not in [3]:
             if a_filter['analog_rm'] in [1]:
@@ -362,56 +364,25 @@ def fill_models_dict(filename, a_filter):
             uch_ceh_id = ceh_count
             ceh_count += 1
 
-
         uch_caption = rm['Отдел'][ind_rm]
         if uch_caption != '':
             if a_filter['adress'] in [1, 3]:
                 adr = rm['Фактический адрес местонахождения'][ind_rm]
             else:
                 adr = None
+
+            # par_id = 0
+            # nod_id = 0
+            # uch_caption_split = uch_caption.split('\\')
             struct_uch_ = models_dict['struct_uch'].get(uch_ceh_id, None)
-            par_id = 0
-            nod_id = 0
-            if len(uch_caption.split('&')) > 1:
-                nod_id = 1
-            for cap in uch_caption.split('&'):
-                if struct_uch_ is None:
-                    models_dict['struct_uch'][uch_ceh_id] = {cap: {
-                            'id': uch_count,
-                            'par_id': par_id,
-                            'ceh_id': uch_ceh_id,
-                            'node_level': nod_id,
-                            'caption': cap,
-                            'code': None,
-                            'adr': adr,
-                            'deleted': '0',
-                            'm_order': uch_count,
-                            'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
-                        }}
-                    par_id = uch_count
-                    rm_uch_id = uch_count
-                    uch_count += 1
-                else:
-                    struct_uch_caption = struct_uch_.get(cap, None)
-                    if struct_uch_caption is None:
-                        struct_uch_[cap] = {
-                            'id': uch_count,
-                            'par_id': par_id,
-                            'ceh_id': uch_ceh_id,
-                            'node_level': nod_id,
-                            'caption': cap,
-                            'code': None,
-                            'adr': adr,
-                            'deleted': '0',
-                            'm_order': uch_count,
-                            'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
-                        }
-                        par_id = uch_count
-                        rm_uch_id = uch_count
-                        uch_count += 1
-                    else:
-                        rm_uch_id = struct_uch_caption['id']
-                models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
+            # Если нет подразделения(ceh), то создаем пустой славарь для него
+            if struct_uch_ is None:
+                models_dict['struct_uch'][uch_ceh_id] = {}
+                struct_uch_ = models_dict['struct_uch'][uch_ceh_id]
+
+            struct_uch_, uch_count = uch_creation(uch_caption, struct_uch_, uch_count, uch_ceh_id, adr, 0, 0)
+            rm_uch_id = uch_count - 1
+            models_dict['struct_ceh'][ceh_name]['struct_rm'][-1]['uch_id'] = rm_uch_id
 
     models_dict['struct_org'].append({
         'id': org_id,
@@ -452,11 +423,9 @@ def fill_models_dict(filename, a_filter):
         person_count += 1
     models_dict['person'][0]['chlen_type'] = 0
 
-
     for ind_per in per_rzona.index:
         pzone = models_dict['per_rzona']
-
-        pz_tabl4_id = per_rzona['Номер рабочего места'][ind_per]
+        pz_tabl4_id = models_dict['struct_rm'][per_rzona['Номер рабочего места'][ind_per]]
         pz_caption = per_rzona['Название зоны'][ind_per]
         pz = pzone.get(f'{pz_tabl4_id}_{pz_caption}')
         if pz is None:
@@ -504,6 +473,32 @@ def fill_models_dict(filename, a_filter):
                 per_gigfactors_count += 1
 
     return models_dict
+
+
+def uch_creation(uch_caption, models_dict_uch, uch_count, uch_ceh_id, adr, par_id, nod_id):
+    uch_caption_split = uch_caption.split('\\')
+    uch_caption_first = uch_caption_split[0]
+    sub_uch = '\\'.join(uch_caption_split[1::])
+    if models_dict_uch.get(uch_caption_first) is None:
+        models_dict_uch[uch_caption_first] = {
+            'uch': {
+                'id': uch_count,
+                'par_id': par_id,
+                'ceh_id': uch_ceh_id,
+                'node_level': nod_id,
+                'caption': uch_caption_first,
+                'code': None,
+                'adr': adr,
+                'deleted': '0',
+                'm_order': uch_count,
+                'mguid': f'{uuid.uuid4()}'.replace('-', '').upper(),
+            },
+            'sub': {}
+        }
+        uch_count += 1
+    if sub_uch:
+        a_dict, uch_count = uch_creation(sub_uch, models_dict_uch[uch_caption_first]['sub'], uch_count, uch_ceh_id, adr, models_dict_uch[uch_caption_first]['uch']['id'], 1)
+    return models_dict_uch, uch_count
 
 
 def write_xml(models_dict, filename):
@@ -574,13 +569,16 @@ def write_xml(models_dict, filename):
                 subxml = Et.SubElement(sout_indent_, key)
                 subxml.text = f'{value}'
 
-    for struct_uch_key, struct_uch_value in models_dict['struct_uch'].items():
-        for key, value in struct_uch_value.items():
-            struct_uch_ = Et.SubElement(xml, 'struct_uch')
-            for key_, value_ in value.items():
-                if value_ is not None:
-                    subxml = Et.SubElement(struct_uch_, key_)
-                    subxml.text = f'{value_}'
+
+    for struct_uch in models_dict['struct_uch'].values():
+        uch_write(struct_uch, xml)
+    # for struct_uch_key, struct_uch_value in models_dict['struct_uch'].items():
+    #     for key, value in struct_uch_value.items():
+    #         struct_uch_ = Et.SubElement(xml, 'struct_uch')
+    #         for key_, value_ in value.items():
+    #             if value_ is not None:
+    #                 subxml = Et.SubElement(struct_uch_, key_)
+    #                 subxml.text = f'{value_}'
 
     for analog_rm_value in models_dict['analog_rm'].values():
         if analog_rm_value['count'] > 1:
@@ -630,3 +628,16 @@ def write_xml(models_dict, filename):
     file.fileField = f'xml/{file_dir}/{filename}.zip'
     file.save()
     return status, 'success'
+
+
+def uch_write(struct_uch, xml):
+    for key, value in struct_uch.items():
+        for key_, value_ in value.items():
+            if key_ == 'uch':
+                struct_uch_ = Et.SubElement(xml, 'struct_uch')
+                for key__, value__ in value_.items():
+                    if value__ is not None:
+                        subxml = Et.SubElement(struct_uch_, key__)
+                        subxml.text = f'{value__}'
+            elif key_ == 'sub':
+                uch_write(value_, xml)
